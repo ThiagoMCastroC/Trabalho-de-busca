@@ -1,0 +1,27 @@
+import random
+#lista que será o arranjo de rainhas:
+arranjo=[0,0,0,0,0,0,0,0]
+
+
+
+def shc_8rainhas(lista, parada):
+    if parada <=998:
+        if parada==0:
+            for i in range(len(lista)):
+                lista[i]=random.randint(0,7)
+        for i in range(len(lista)):
+            if i+1<=len(lista):
+                for j in range(len(lista)):
+                    if (lista[i]==lista[j] or abs(lista[i]-i)==abs(lista[j]-j)) and i!=j:
+                        aux=lista[i]
+                        lista[i]=random.randint(0,7)
+                        if lista[i]==aux:
+                            lista[i]=random.randint(0,7)
+                        print(lista)
+                        return shc_8rainhas(lista, parada+1)
+    else:
+        print(parada)
+        return 
+                
+shc_8rainhas(arranjo,0)
+
