@@ -1,0 +1,95 @@
+çimport random
+
+# ---------- Parâmetros ----------
+TAM_POP = 20
+TAM_INDIVIDUO = 48  # 8 rainhas * 6 bits
+TAXA_CROSSOVER = 0.8
+TAXA_MUTACAO = 0.03
+MAX_GERACOES = 1000
+
+# ---------- Utilitários ----------
+def bin_para_tabuleiro(bin_str):
+    tabuleiro = []
+    for i in range(0, 48, 6):
+        gene = bin_str[i:i+6]
+        valor = int(gene, 2)
+        tabuleiro.append(valor % 8)  # limita de 0 a 7
+    return tabuleiro
+
+def fitness(tabuleiro):
+    colisoes = 0
+    for i in range(8):
+        for j in range(i + 1, 8):
+            if tabuleiro[i] == tabuleiro[j] or abs(tabuleiro[i] - tabuleiro[j]) == abs(i - j):
+                colisoes += 1
+    return colisoes
+
+def gera_individuo():
+    return ''.join(random.choice('01') for _ in range(TAM_INDIVIDUO))
+
+def populacao_inicial():
+    return [gera_individuo() for _ in range(TAM_POP)]
+
+# ---------- Seleção por roleta ----------
+def selecao_roleta(populacao):
+    fitness_list = [fitness(bin_para_tabuleiro(ind)) for ind in populacao]
+    max_fit = max(fitness_list) + 1
+    valores = [max_fit - f for f in fitness_list]
+    total = sum(valores)
+    probs = [v / total for v in valores]
+    escolhidos = random.choices(populacao, weights=probs, k=2)
+    return escolhidos
+
+# ---------- Crossover ----------
+def crossover(ind1, ind2):
+    if random.random() < TAXA_CROSSOVER:
+        ponto = random.randint(1, TAM_INDIVIDUO - 1)
+        filho1 = ind1[:ponto] + ind2[ponto:]
+        filho2 = ind2[:ponto] + ind1[ponto:]
+        return filho1, filho2
+    else:
+        return ind1, ind2
+
+# ---------- Mutação ----------
+def mutacao(individuo):
+    bits = list(individuo)
+    for i in range(len(bits)):
+        if random.random() < TAXA_MUTACAO:
+            bits[i] = '0' if bits[i] == '1' else '1'
+    return ''.join(bits)
+
+# ---------- GA Principal ----------
+def algoritmo_genetico():
+    pop = populacao_inicial()
+    for geracao in range(1, MAX_GERACOES + 1):
+        pop = sorted(pop, key=lambda ind: fitness(bin_para_tabuleiro(ind)))
+        melhor = pop[0]
+        fit_melhor = fitness(bin_para_tabuleiro(melhor))
+
+        print(f"Geração {geracao} | Melhor Fitness: {fit_melhor}")
+        if fit_melhor == 0:
+            print("Solução ótima encontrada!")
+            return melhor, geracao
+
+        nova_pop = pop[:2]  # elitismo (2 melhores)
+
+        while len(nova_pop) < TAM_POP:
+            pai1, pai2 = selecao_roleta(pop)
+            filho1, filho2 = crossover(pai1, pai2)
+            filho1 = mutacao(filho1)
+            filho2 = mutacao(filho2)
+            nova_pop.extend([filho1, filho2])
+
+        pop = nova_pop[:TAM_POP]  # garantir tamanho da população
+
+    melhor = min(pop, key=lambda ind: fitness(bin_para_tabuleiro(ind)))
+    return melhor, MAX_GERACOES
+
+# ---------- Execução ----------
+if __name__ == "__main__":
+    solucao, geracoes = algoritmo_genetico()
+    tab = bin_para_tabuleiro(solucao)
+    print(f"\nSolução encontrada em {geracoes} gerações:")
+    print(f"Indivíduo binário: {solucao}")
+    print(f"Tabuleiro: {tab}")
+    print(f"Fitness: {fitness(tab)}")
